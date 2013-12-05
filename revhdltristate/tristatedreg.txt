@@ -1,0 +1,41 @@
+library IEEE;
+use IEEE.STD_LOGIC_1164.ALL;
+
+
+entity tristatedreg is
+    generic (N:natural:=4);
+    Port ( tregin : in  STD_LOGIC_VECTOR (N downto 0);
+           tregout : out  STD_LOGIC_VECTOR (N downto 0);
+           load : in  bit;
+           incr : in  bit;
+           clear : in  bit;
+           clk : in  bit;
+           oe : in  bit);
+end tristatedreg;
+
+architecture Behavioral of tristatedreg is
+
+component regn 
+    generic ( N:natural); 
+    Port ( regin : in  STD_LOGIC_VECTOR (N downto 0);
+           regout : inout  STD_LOGIC_VECTOR (N downto 0);
+           reset : in  bit;
+           incr : in  bit;
+           clk : in  bit;
+	  load: in bit);
+end component regn;
+
+component tristate 
+    generic (N:natural);
+    Port ( enable : in  bit;
+           input : in  STD_LOGIC_VECTOR (N downto 0);
+           output : out  STD_LOGIC_VECTOR (N downto 0));
+end component tristate ;
+signal tempr :std_logic_vector(N downto 0);
+
+begin
+   regcomp : regn generic map (N) port map (tregin,tempr,clear,incr,clk,load);
+  tricomp : tristate generic map (N) port map (oe, tempr, tregout);
+
+end Behavioral;
+

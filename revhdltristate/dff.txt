@@ -1,0 +1,180 @@
+--1) simplest dff with no CLEAR and only CLOCK----------
+
+library ieee;
+use ieee.std_logic_1164.all;
+-----------------------------
+
+entity dff is
+  port ( q: out std_logic;
+         qbar: out std_logic; 
+         d: in std_logic;
+         clk: in  bit
+       	);
+end dff;
+
+-------------------
+
+architecture behavior of dff is
+
+begin
+    p1: process(clk) is
+    begin
+       if (clk'event and clk='1') then
+	    q<=d;
+  	    qbar<= not d;
+	  
+       end if;
+end behavior;    
+
+-------------------
+
+-----2) Add the asynchronous CLEAR input. --------
+
+entity dff is
+  port ( q: out std_logic;
+         qbar: out std_logic; 
+         d: in std_logic;
+         clk: in  bit;
+         clr: in  bit
+	);
+end dff;
+
+------------------------------
+architecture behavior of dff is
+
+begin
+    p1: process(clr,clk) is
+    begin
+-----NOTE THE HIGHER PRIORITY GIVEN TO CLR-------
+       if (clr='1') then  
+           q<='0';
+	  qbar<='1';
+       elsif (clk'event and clk='1') then
+            q<=d;
+  	    qbar<= not d;
+       end if;
+    end process p1; 
+end behavior; 
+
+-------------------
+
+------3) Now add ENABLE input ---------
+entity dff is
+  port ( q: inout std_logic;
+         qbar: inout std_logic; 
+         d: in std_logic;
+         clk: in  bit;
+         clr: in  bit;
+	en : in bit
+	);
+end dff;
+
+--------------------------
+architecture behavior of dff is
+
+begin
+    p1: process(clr,clk) is
+    begin
+       if (clr='1') then
+           q<='0';
+	  qbar<='1';
+       elsif (clk'event and clk='1') then
+-----NOTE THAT EN NEED NOT BE IN SENSITIVITY LIST. IT IS SYNCHRONOUS------
+	  if (en = '1') then 
+            q<=d;
+  	    qbar<= not d;
+	  else
+-----NOTE HOW Q IS FED BACK AS INPUT. IT IS AN INOUT PORT ---------
+-----Reason out why this is needed?--------------
+	     q<= q;
+	    qbar<= qbar;
+	 end if;
+       end if;
+    end process p1; 
+end behavior; 
+
+---------------------------
+---------Test Bench for the last dff-------------
+LIBRARY ieee;
+USE ieee.std_logic_1164.ALL;
+ 
+----------A test bench has a dummy entity----------
+ENTITY dfftb IS
+END dfftb;
+
+-----The Device Under Test (DUT) is a component --------
+-----It is declared in the declarative portion of the architecture---- 
+ 
+ARCHITECTURE behavior OF dfftb IS 
+ 
+ 
+    COMPONENT dff
+    PORT(
+         q : inOUT  std_logic;
+         qbar : inOUT  std_logic;
+         d : IN  std_logic;
+         clk : IN  bit;
+         clr : IN  bit;
+	en : in bit
+        );
+    END COMPONENT;
+    
+
+-----Each port of DUT must be connected to a signal (not neccessary of same name)---
+-----Guess why this is so--------
+-----These signals are initialized using :=--------
+
+   signal d : std_logic := '0';
+   signal clk : bit:= '0';
+   signal clr : bit := '0';
+   signal en : bit := '0';
+ 	
+   signal q : std_logic;
+   signal qbar : std_logic;
+
+   -- Clock period definitions
+   constant clk_period : time := 10 ns;
+ 
+BEGIN
+ 
+	-- Instantiate the DUT. Connect ports to signals-----
+   uut: dff PORT MAP (
+          q => q,
+          qbar => qbar,
+          d => d,
+          clk => clk,
+          clr => clr,
+ 	 en => en
+        );
+
+   -- Clock process. It is a waveform generator-----
+   clk_process :process
+   begin
+		clk <= '0';
+		wait for clk_period/2;
+		clk <= '1';
+		wait for clk_period/2;
+   end process;
+ 
+
+   -- Stimulus process
+   stimulate: process
+	begin
+	      clr <= '1';
+		d<= '1';
+		wait for 40 ns;
+		clr <= '0';
+		en <= '0';
+		wait for 20 ns;
+		en <= '1';
+		wait for 20 ns;
+		d<= '0' ;
+		wait for 30 ns;
+		
+   end process;
+
+END;
+
+	
+
+

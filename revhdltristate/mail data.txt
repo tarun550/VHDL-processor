@@ -1,0 +1,153 @@
+Dear Students
+Lets begin with some vhdl exercises. Meantime, keep practicing MASM programs. 
+We know that busses are connected to multiple sources and destinations. All except one pair are tri-stated. Our first vhdl program is for a tri-state buffer. 
+
+
+----------------PART 1--------------
+library ieee;
+use ieee.std_logic_1164.all;
+-----------------PART 2---------------------------
+entity tri_state is
+   port(enable: in std_logic;
+          input: in std_logic_vector (7 downto 0);
+          output: out std_logic_vector (7 downto 0) );
+end tri_state;
+------------------PART 3-------------------------
+architecture dataflow of tri_state is
+
+begin
+
+    output <= input when (enable = '0') else
+                     (others => 'z');
+end tri_state
+------------------------------------------------------------
+Explanations:
+PART 1: all programs begin with these two statements. They make the standard ieee library visible to the program
+PART 2: entity (the chip/circuit and its IO pins) - Primary unit
+              -declares all input output signals. 
+              -std_logic is an enumerated data type defined in ieee.std_logic_1164.all. 
+              -Besides '1' and '0', std_logic has the tri-state value 'z' and some other values. Pl see the library.
+              -std_logic_vector is an array of std_logic.
+              -note that the last io port does not end with a semicolon   
+PART 3: architecture (the internals of the chip/circuit) - Secondary unit
+The two parts of architecture
+             -its body has two parts (a)declaration part before begin (b) description after begin. 
+             -this program has nothing in declaration part. Usually signals and components are declared here.
+             -the body describes how the tri-state buffer works 
+The styles of programming
+             -vhdl allows 4 styles: dataflow, behavioral, structural, mixed.
+             -this is dataflow style. Each statement executes when its RHS signals change.
+             -In this case the RHS signals are input and enable. Any change in these will trigger the change in output.  
+             -note the when statement. It is used in dataflow style
+The arrows
+             -note others=>'z'. Others refer to all the remaining (in this case all 8) lines of output 
+             -note the arrows <= (signal assignment) and =>(assign individual vector elements)
+             -another arrow is := (constant or variable assignment) 
+             -Thus vhdl deals with constants, variables, signals, input-output ports, vector elements 
+             -Out of these, all except input-output ports can be assigned in architecture body.
+EXTRA: Bindings and Design units
+The bindings
+             - An Entity can bind to any number of architectures (not the reverse tho)
+             - Here entity tri-state is automatically binded with architecture dataflow
+             - To bind with some other architecture, you need a Configuration declaration
+The Units
+             - vhdl has two kinds of Design units: primary Independent) and secondary(dependent)
+             - It allows 3 kinds of primary units: entity, package and configuration
+             - it has two kinds of secondary units: architecture body and package body  
+SELF-STUDY
+-Find out how you can test the circuit by writing test bench and using a simulation waveform viewer. 
+-Since IO ports cannot be assigned, we need to write another entity-architecture
+ design called Test-Bench which includes the tri_state-dataflow design as a component
+-That would allow us to assign tri-state's IO ports
+-Test bench is a good example of structural modeling
+
+
+
+
+
+
+
+
+
+
+
+1) In the last program on tristate, some of u reported that z wasnt being recognized.  It is capital 'Z'. Please correct that.  
+
+2) I am now rewriting the code, except that the width of the data bus is not 8. It is N. N is a generic. It can be given any value later when this design
+   is instantiated as a component in some other design. 
+
+entity tristate is
+    generic (N:natural);
+    Port ( enable : in  bit;
+           input : in  STD_LOGIC_VECTOR (N downto 0);
+           output : out  STD_LOGIC_VECTOR (N downto 0));
+end tristate;
+
+architecture dataflow of tristate is
+
+begin
+ 
+ output <= input when (enable='1')else (others => 'Z');
+
+end dataflow;
+
+3) Here is a test bench for this N-bit tri-state buffer.
+ 
+----A test bench entity is a dummy, except that the generic is declared ------.
+ENTITY tristatetb IS
+generic (N:natural:=7);
+END tristatetb;
+ 
+ARCHITECTURE behavior OF tristatetb IS 
+ 
+    -- The device to be tested DUT (Device Under Test) is declared as a component in the declarative part of architecture
+ 
+    COMPONENT tristate
+	 generic (N:natural);
+    PORT(
+         enable : IN  std_logic;
+         input : IN  std_logic_vector(N downto 0);
+         output : OUT  std_logic_vector(N downto 0)
+        );
+    END COMPONENT;
+    
+ -----All ports of a component must be connected either to a signal (not necessarily of the same name) or to an entity port (here there are none!------   
+   signal enable : std_logic := '0';
+   signal input : std_logic_vector(N downto 0) := (others => '0');
+   signal output : std_logic_vector(N downto 0);
+ 
+    
+BEGIN
+ 
+	-- Instantiate the DUT. Note generic map and port map-----
+   dut: tristate generic map (7) PORT MAP (
+          enable => enable,
+          input => input,
+          output => output
+        );
+-----Now write a process to stimulate the DUT--------
+   stumulate: process
+	begin
+	  enable <= '0';
+	  input<=X"F0" ;      
+	  wait for 20 ns;
+	  enable <= '1';
+	  wait for 20 ns;
+	  input <= X"AA";
+	  wait for 20 ns;
+	  
+	end process;
+	
+
+END;
+
+4) I am also attaching code for different types of D FF and test bench. Please try and write code for DFF with synchronous set-reset also. 
+Please note that vhdl has 5 kinds of design units, 3 primary (entity, package, configuration) and 2 secondary (architecture and package body)
+Each primary unit MUST DECLARE THE ieee and OTHER LIBRARIES SEPARATELY
+
+5) There is a second file "reg" that uses structural modeling to make a register out of the DFF. See the generate statements. 
+Note that in it we have added the INCR facility also. Test bench is also given. 
+Why was the signal tempregout needed here?
+
+6) Finally there is a file "tristatedreg" that instantiates the tristate buffers and the registers (both N bits) to make registers with tristated outputs. 
+Try and write its test bench 
